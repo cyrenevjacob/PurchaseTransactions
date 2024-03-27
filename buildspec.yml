@@ -9,7 +9,7 @@ phases:
  post_build:
   commands:
    - echo Build completed successfully.
-artefacts:
+artifacts:
  files:
   - target/PurchaseTransaction.jar
  discard-paths: yes
