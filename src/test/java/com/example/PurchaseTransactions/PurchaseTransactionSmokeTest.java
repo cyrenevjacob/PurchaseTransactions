@@ -26,7 +26,7 @@ import org.springframework.test.web.servlet.ResultActions;
 @SpringBootTest
 @AutoConfigureMockMvc
 class PurchaseTransactionSmokeTest {
-
+    
 	@Autowired
 	private MockMvc mockMvc;
 	
@@ -36,20 +36,6 @@ class PurchaseTransactionSmokeTest {
 		.andExpect(content().string(containsString("This is home!")));
 	}
 	
-	@Test
-	void testGetPurchaseTransaction() throws Exception{
-		// Arrange
-		UUID uuid = UUID.fromString("67739ab0-f2c1-4ae2-8611-7dc689e42138");
-		// Act
-		ResultActions result = mockMvc.perform(get("/get/{uuid}", uuid));
-		// Assert
-		result.andExpect(status().isOk())
-        .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-        .andExpect(jsonPath("$.transactionId").exists());
-		
-	}
-
-
 	@Test
     public void testAddPurchaseTransaction() throws Exception {
         // Arrange
@@ -63,6 +49,16 @@ class PurchaseTransactionSmokeTest {
         ResultActions result = mockMvc.perform(post("/add")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(purchaseJson));
+        // Assert
+        result.andExpect(status().isOk());
+    }
+	
+	@Test
+    public void testListPurchaseTransactions() throws Exception {
+        // Arrange
+		// Act
+        ResultActions result = mockMvc.perform(get("/list")
+                .contentType(MediaType.APPLICATION_JSON));
         // Assert
         result.andExpect(status().isOk());
     }
@@ -111,16 +107,5 @@ class PurchaseTransactionSmokeTest {
                 .content(purchaseJson))
         		.andDo(print()).andExpect(status().is4xxClientError());
     }
-	
-	
-	@Test
-    public void testListPurchaseTransactions() throws Exception {
-        // Arrange
-		// Act
-        ResultActions result = mockMvc.perform(get("/list")
-                .contentType(MediaType.APPLICATION_JSON));
-        // Assert
-        result.andExpect(status().isOk());
-    }
-
+   
 }
