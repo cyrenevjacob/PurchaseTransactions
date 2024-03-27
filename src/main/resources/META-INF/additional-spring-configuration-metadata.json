@@ -1,0 +1,17 @@
+{"properties": [
+  {
+    "name": "spring.datasource.driver",
+    "type": "java.lang.String",
+    "description": "A description for 'spring.datasource.driver'"
+  },
+  {
+    "name": "name",
+    "type": "java.lang.String",
+    "description": "A description for 'name'"
+  },
+  {
+    "name": "app.fiscalurl",
+    "type": "java.lang.String",
+    "description": "A description for 'app.fiscalurl'"
+  }
+]}
