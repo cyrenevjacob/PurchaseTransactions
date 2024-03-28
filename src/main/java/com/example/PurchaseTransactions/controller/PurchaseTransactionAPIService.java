@@ -2,6 +2,7 @@ package com.example.PurchaseTransactions.controller;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,47 +50,72 @@ public class PurchaseTransactionAPIService {
 		
 	}
 	
-	@GetMapping(value = "/get/{uuid}")
-	//public List<Object> getTransaction(@PathVariable UUID uuid) {
-	public PurchaseTransaction getTransaction(@PathVariable UUID uuid) throws JsonMappingException, JsonProcessingException {
-		PurchaseTransaction purchaseTransaction = purchaseTransactionRepo.findById(uuid).get();
+	@GetMapping(value = "/get/{id}")
+	public PurchaseTransaction getTransaction(@PathVariable String id) throws JsonMappingException, JsonProcessingException, NoSuchElementException {
+		PurchaseTransaction purchaseTransaction = new PurchaseTransaction();
+		UUID uuid = UUID.randomUUID();
+		try {	
+			uuid = UUID.fromString(id);	
+			try {
+				purchaseTransaction = purchaseTransactionRepo.findById(uuid).get();
+			}
+			catch(NoSuchElementException ex) {
+				return new PurchaseTransaction();
+			}
+		}
+		catch(IllegalArgumentException ex) {
+			purchaseTransaction.setTransactionDescription(ex.getMessage());
+		}
+		
 		return purchaseTransaction;
 	}
 	
-	@GetMapping(value = "/get/{uuid}/{countrycurrency}")
-	//public List<Object> getTransaction(@PathVariable UUID uuid) {
-	public PurchaseTransactionPresenter getExchangeValueForTransaction(@PathVariable UUID uuid, @PathVariable String countrycurrency) throws JsonMappingException, JsonProcessingException {
-		PurchaseTransaction purchaseTransaction = purchaseTransactionRepo.findById(uuid).get();
-		double purchaseAmount = purchaseTransaction.getTransactionAmount();
-		LocalDate transactionDate = LocalDate.parse(purchaseTransaction.getTransactionDate());
-		LocalDate transactionsFrom = transactionDate.minusMonths(backdateByMonths);
-		String url = fURL.replace("XXXX-XXX", countrycurrency);
-		url = url.replace("YYYY-MM-dd", transactionsFrom.toString());
-		RestTemplate restTemplate = new RestTemplate();
-		ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
-        
-        String jsonString = response.getBody();
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        ExchangeRate exchangeRateObj = mapper.readValue(jsonString, ExchangeRate.class);
-        double exchangeRate = Double.parseDouble(exchangeRateObj.exchangeRates.get(0).exchangeRate);
-        String recordDate = exchangeRateObj.exchangeRates.get(0).recordDate;
-        double convertedAmount = exchangeRate * purchaseAmount;
-        LocalDate recDate = LocalDate.parse(recordDate);
-        if(recDate.isAfter(transactionDate)) return new PurchaseTransactionPresenter("Cannot be converted to target currency. Record Date is " + recDate.toString() + " and transaction on " + transactionDate.toString());
-        
-        ConvertedPurchaseTransaction convertedPurchaseTransaction = new ConvertedPurchaseTransaction(
-        		purchaseAmount, 
-        		purchaseTransaction.getTransactionDate(), 
-        		purchaseTransaction.getTransactionDescription(),
-        		purchaseTransaction.getTransactionId(),
-        		convertedAmount,
-        		exchangeRate,
-        		recordDate
-        		);
-        
-        return new PurchaseTransactionPresenter(convertedPurchaseTransaction, "Conversion successful. Record Date is " + recDate.toString() + " and transaction on " + transactionDate.toString());
-        //return Double.toString(convertedAmount) + "(" + exchangeRateObj.exchangeRates.get(0).recordDate + ")";
+	@GetMapping(value = "/get/{id}/{countrycurrency}")
+	public PurchaseTransactionPresenter getExchangeValueForTransaction(@PathVariable String id, @PathVariable String countrycurrency) throws JsonMappingException, JsonProcessingException {
+		UUID uuid = UUID.randomUUID();
+		PurchaseTransaction purchaseTransaction = new PurchaseTransaction();
+		try {	
+			uuid = UUID.fromString(id);	
+			try {
+				purchaseTransaction = purchaseTransactionRepo.findById(uuid).get();
+			}
+			catch(NoSuchElementException ex) {
+				return new PurchaseTransactionPresenter(new ConvertedPurchaseTransaction(), "No such transaction.");
+			}
+			double purchaseAmount = purchaseTransaction.getTransactionAmount();
+			LocalDate transactionDate = LocalDate.parse(purchaseTransaction.getTransactionDate());
+			LocalDate transactionsFrom = transactionDate.minusMonths(backdateByMonths);
+			String url = fURL.replace("XXXX-XXX", countrycurrency);
+			url = url.replace("YYYY-MM-dd", transactionsFrom.toString());
+			RestTemplate restTemplate = new RestTemplate();
+			ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
+	        String jsonString = response.getBody();
+	        ObjectMapper mapper = new ObjectMapper();
+	        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+	        ExchangeRate exchangeRateObj = mapper.readValue(jsonString, ExchangeRate.class);
+	        double exchangeRate = Double.parseDouble(exchangeRateObj.exchangeRates.get(0).exchangeRate);
+	        String recordDate = exchangeRateObj.exchangeRates.get(0).recordDate;
+	        double convertedAmount = exchangeRate * purchaseAmount;
+	        LocalDate recDate = LocalDate.parse(recordDate);
+	        if(recDate.isAfter(transactionDate)) return new PurchaseTransactionPresenter("Cannot be converted to target currency. Record Date is " + recDate.toString() + " and transaction on " + transactionDate.toString());
+	        
+	        ConvertedPurchaseTransaction convertedPurchaseTransaction = new ConvertedPurchaseTransaction(
+	        		purchaseAmount, 
+	        		purchaseTransaction.getTransactionDate(), 
+	        		purchaseTransaction.getTransactionDescription(),
+	        		purchaseTransaction.getTransactionId(),
+	        		convertedAmount,
+	        		exchangeRate,
+	        		recordDate
+	        		);
+	        
+	        return new PurchaseTransactionPresenter(convertedPurchaseTransaction, "Conversion successful. Record Date is " + recDate.toString() + " and transaction on " + transactionDate.toString());
+	        
+		}
+		catch(IllegalArgumentException ex) {
+			purchaseTransaction.setTransactionDescription(ex.getMessage());
+			return new PurchaseTransactionPresenter(new ConvertedPurchaseTransaction(), "No such transaction.");
+		}
 	}
 
 	
@@ -115,10 +141,6 @@ public class PurchaseTransactionAPIService {
 		purchaseTransactionRepo.save(purchaseTransaction);
 		return "Inserted Transaction.";
 		
-	}
-	
-	private String getCountryCurrency(String currency) {
-		return currency;
 	}
 	
 }

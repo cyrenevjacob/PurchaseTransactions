@@ -10,10 +10,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.text.DecimalFormat;
 import java.time.LocalDate;
-import java.util.NoSuchElementException;
 import java.util.Random;
-import java.util.UUID;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -31,12 +30,14 @@ class PurchaseTransactionSmokeTest {
 	private MockMvc mockMvc;
 	
 	@Test
+	@DisplayName("Test if home page loads with custom message")
 	void greetingShouldReturnDefaultMessage() throws Exception {
 		this.mockMvc.perform(get("/")).andDo(print()).andExpect(status().isOk())
 		.andExpect(content().string(containsString("This is home!")));
 	}
 	
 	@Test
+	@DisplayName("Insert Transaction")
     public void testAddPurchaseTransaction() throws Exception {
         // Arrange
 		Random random = new Random();
@@ -54,6 +55,7 @@ class PurchaseTransactionSmokeTest {
     }
 	
 	@Test
+	@DisplayName("Get all transactions - lists the transaction created above.")
     public void testListPurchaseTransactions() throws Exception {
         // Arrange
 		// Act
@@ -64,6 +66,7 @@ class PurchaseTransactionSmokeTest {
     }
 	
 	@Test
+	@DisplayName("Add Transaction with an invalid amount")
     public void testAddPurchaseTransactionInvalidAmount() throws Exception {
         // Arrange
         String purchaseJson = "{\"transactionAmount\":\"ABCD.XYZ\",\"transactionDate\":\"" + LocalDate.now().toString() + "\", \"transactionDescription\":\"Purchase for test on " + LocalDate.now().toString() + "\"}";
@@ -76,6 +79,7 @@ class PurchaseTransactionSmokeTest {
     }
 	
 	@Test
+	@DisplayName("Add Transaction with an invalid date")
     public void testAddPurchaseTransactionInvalidDate() throws Exception {
         // Arrange
 		Random random = new Random();
@@ -93,6 +97,7 @@ class PurchaseTransactionSmokeTest {
     }
 	
 	@Test
+	@DisplayName("Add Transaction without description")
     public void testAddPurchaseTransactionEmptyDescription() throws Exception {
         // Arrange
 		Random random = new Random();
@@ -107,5 +112,18 @@ class PurchaseTransactionSmokeTest {
                 .content(purchaseJson))
         		.andDo(print()).andExpect(status().is4xxClientError());
     }
+	
+	@Test
+	@DisplayName("Get Transaction with an invalid id")
+	public void testGetPurchaseTransactionInvalid() throws Exception{
+		// Arrange
+		String uuid = "0389";
+		// Act
+		this.mockMvc.perform(get("/get/{uuid}", uuid)
+				.contentType(MediaType.APPLICATION_JSON))
+		.andExpect(status().isOk())
+		.andExpect(jsonPath("$.transactionAmount").value(0.0));
+
+	}
    
 }
