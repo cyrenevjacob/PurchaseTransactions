@@ -1,5 +1,6 @@
 package com.example.PurchaseTransactions.controller;
 
+import java.text.DecimalFormat;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -96,6 +97,8 @@ public class PurchaseTransactionAPIService {
 	        double exchangeRate = Double.parseDouble(exchangeRateObj.exchangeRates.get(0).exchangeRate);
 	        String recordDate = exchangeRateObj.exchangeRates.get(0).recordDate;
 	        double convertedAmount = exchangeRate * purchaseAmount;
+	        DecimalFormat df = new DecimalFormat("0.00");
+	        convertedAmount = Double.valueOf(df.format(convertedAmount));
 	        LocalDate recDate = LocalDate.parse(recordDate);
 	        if(recDate.isAfter(transactionDate)) return new PurchaseTransactionPresenter("Cannot be converted to target currency. Record Date is " + recDate.toString() + " and transaction on " + transactionDate.toString());
 	        
