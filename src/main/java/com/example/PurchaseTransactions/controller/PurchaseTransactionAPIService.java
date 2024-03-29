@@ -94,25 +94,31 @@ public class PurchaseTransactionAPIService {
 	        ObjectMapper mapper = new ObjectMapper();
 	        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 	        ExchangeRate exchangeRateObj = mapper.readValue(jsonString, ExchangeRate.class);
-	        double exchangeRate = Double.parseDouble(exchangeRateObj.exchangeRates.get(0).exchangeRate);
-	        String recordDate = exchangeRateObj.exchangeRates.get(0).recordDate;
-	        double convertedAmount = exchangeRate * purchaseAmount;
-	        DecimalFormat df = new DecimalFormat("0.00");
-	        convertedAmount = Double.valueOf(df.format(convertedAmount));
-	        LocalDate recDate = LocalDate.parse(recordDate);
-	        if(recDate.isAfter(transactionDate)) return new PurchaseTransactionPresenter("Cannot be converted to target currency. Record Date is " + recDate.toString() + " and transaction on " + transactionDate.toString());
+	        if (exchangeRateObj.exchangeRates.size() > 0) {
+		        double exchangeRate = Double.parseDouble(exchangeRateObj.exchangeRates.get(0).exchangeRate);
+		        String recordDate = exchangeRateObj.exchangeRates.get(0).recordDate;
+		        double convertedAmount = exchangeRate * purchaseAmount;
+		        DecimalFormat df = new DecimalFormat("0.00");
+		        convertedAmount = Double.valueOf(df.format(convertedAmount));
+		        LocalDate recDate = LocalDate.parse(recordDate);
+		        
+		        ConvertedPurchaseTransaction convertedPurchaseTransaction = new ConvertedPurchaseTransaction(
+		        		purchaseAmount, 
+		        		purchaseTransaction.getTransactionDate(), 
+		        		purchaseTransaction.getTransactionDescription(),
+		        		purchaseTransaction.getTransactionId(),
+		        		convertedAmount,
+		        		exchangeRate,
+		        		recordDate
+		        		);
+		        
+		        return new PurchaseTransactionPresenter(convertedPurchaseTransaction, "Conversion successful. Record Date is " + recDate.toString() + " and transaction on " + transactionDate.toString());
+	        }
+	        else {
+	        	return new PurchaseTransactionPresenter("Cannot be converted to target currency. No records found after " + transactionsFrom.toString());
+		        
+	        }
 	        
-	        ConvertedPurchaseTransaction convertedPurchaseTransaction = new ConvertedPurchaseTransaction(
-	        		purchaseAmount, 
-	        		purchaseTransaction.getTransactionDate(), 
-	        		purchaseTransaction.getTransactionDescription(),
-	        		purchaseTransaction.getTransactionId(),
-	        		convertedAmount,
-	        		exchangeRate,
-	        		recordDate
-	        		);
-	        
-	        return new PurchaseTransactionPresenter(convertedPurchaseTransaction, "Conversion successful. Record Date is " + recDate.toString() + " and transaction on " + transactionDate.toString());
 	        
 		}
 		catch(IllegalArgumentException ex) {
